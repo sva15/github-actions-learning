@@ -9,13 +9,8 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    -  name: Install Cowsay
-       run: |
-         sudo apt update
-         sudo apt install -y cowsay
-
-    -  name: Generate ASCII Artwork
-       run:  cowsay -f dragon "Run for cover, I am a DRAGON....RAWR" >> dragon.txt
+    -  name: Checkout
+       uses: actions/checkout@v4
     
-    -  name: Display file
-       run: cat dragon.txt
+    -  name: Run ACII Artwork
+       run: ./generate-ascii-art.sh
