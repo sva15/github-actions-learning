@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>My Angular App</title>
+  <base href="/">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#1976d2">
+  <meta name="description" content="My Angular application">
+  
+  <!-- Favicon (generated from https://favicon.io/) -->
+  <link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="assets/favicon-16x16.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="assets/apple-touch-icon.png">
+  <link rel="manifest" href="manifest.webmanifest">
+
+  <!-- Preload critical resources -->
+  <link rel="preload" href="styles.css" as="style">
+  <link rel="preload" href="runtime.js" as="script">
+  <link rel="preload" href="polyfills.js" as="script">
+  <link rel="preload" href="main.js" as="script">
+
+  <!-- CSS -->
+  <link href="styles.css" rel="stylesheet">
+</head>
+<body>
+  <app-root>
+    <!-- Loading indicator (shown until Angular bootstraps) -->
+    <div class="loading">
+      <div class="spinner"></div>
+      <p>Loading application...</p>
+    </div>
+  </app-root>
+  
+  <!-- Noscript fallback -->
+  <noscript>
+    <div class="noscript-warning">
+      <h1>JavaScript Required</h1>
+      <p>This application requires JavaScript to function properly.</p>
+    </div>
+  </noscript>
+</body>
+</html>

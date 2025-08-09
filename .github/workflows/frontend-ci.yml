@@ -28,7 +28,6 @@ jobs:
 
     -  name: Run Unit Tests
        run: |
-         cd frontend
          npm run test:ci
 
     -  name: Build Application
