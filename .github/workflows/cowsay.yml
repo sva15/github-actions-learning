@@ -13,4 +13,6 @@ jobs:
        uses: actions/checkout@v4
     
     -  name: Run ACII Artwork
-       run: ./generate-ascii-art.sh
+       run: |
+          chmod +x generate-ascii-srt.sh
+          ./generate-ascii-art.sh
