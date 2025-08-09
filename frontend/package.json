@@ -1,0 +1,8 @@
+"scripts": {
+  "lint": "eslint \"src/**/*.{js,ts}\" --fix",
+  "test": "ng test",
+  "test:watch": "ng test --watch=true",
+  "test:ci": "ng test --no-watch --no-progress --browsers=ChromeHeadless --code-coverage",
+  "start": "ng serve",
+  "build": "ng build"
+}
