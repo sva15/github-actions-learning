@@ -40,6 +40,11 @@ jobs:
       runs-on: ubuntu-latest
       needs: [job2, job1]
       steps:
+        -  name: Download Dragon text file
+           uses: actions/download-artifact@v5
+           with:
+            name: dragon-text-file
+            
         -  name: Display dragon
            run: cat dragon.txt
         
