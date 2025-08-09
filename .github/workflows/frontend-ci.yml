@@ -21,11 +21,14 @@ jobs:
           node-version: 20
          
     -  name: Install Deps
-       run: npm install
+       run: npm ci
+       
     -  name: Run Lint
        run: npm run lint
+
     -  name: Run Unit Tests
-       run: npm run test
+       run: npm run test:ci
+
     -  name: Build Application
        run: npm run build -- --configuration production 
 
