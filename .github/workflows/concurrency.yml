@@ -23,6 +23,7 @@ jobs:
     concurrency:
       group: production-deployment
       cancel-in-progress: true
+      
     needs: [build, test]
     steps:
       - name: Deploy
