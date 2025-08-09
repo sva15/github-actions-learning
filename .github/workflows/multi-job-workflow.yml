@@ -18,19 +18,12 @@ jobs:
              sudo apt install cowsay -y
         -  name: Generate ASCII
            run: cowsay -f dragon "Run for cover, I am a DRAGON.... RAWR" >> dragon.txt
-
-        -  name: sleep
-           run: sleep 30
     job2:
-      runs-on: ubutnu-latest
       needs: job1
+      runs-on: ubuntu-latest
       steps:
-        -  name: Sleep
-           run: sleep 10
-        
-        -  name: Validate
-           run: |
-             grep -i "dragon" dragon.txt
+        - name: Test File Exists
+          run: grep -i "dragon" dragon.txt
     
     job3:
       runs-on: ubuntu-latest
