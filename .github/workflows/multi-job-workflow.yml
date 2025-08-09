@@ -1,0 +1,43 @@
+name: My First Multi-Job WorkFlow
+
+on:
+  push:
+    branches: main
+
+jobs:
+    job1:
+      runs-on: ubuntu-latest
+
+      steps:
+        -  name: Checkout
+           uses: actions/checkout@v4
+
+        -  name: Install Cowsay
+           run: |
+             sudo apt update
+             sudo apt install cowsay -y
+        -  name: Generate ASCII
+           run: cowsay -f dragon Run for cover, I am a DRAGON.... RAWR" >> dragon.txt
+
+        -  name: sleep
+           run: sleep 30s
+    job2:
+      runs-on: ubutnu-latest
+
+      steps:
+        -  name: Sleep
+           run: sleep 10s
+        
+        -  name: Validate
+           run: |
+             grep -i "dragon" dragon.txt
+    
+    job3:
+      runs-on: ubuntu-latest
+
+      steps:
+        -  name: Display dragon
+           run: cat dragon.txt
+        
+        -  name: Simulate Deployment
+           run: echo "Deploying dragon.txt"
