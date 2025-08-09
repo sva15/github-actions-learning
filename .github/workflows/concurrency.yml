@@ -25,5 +25,7 @@ jobs:
       cancel-in-progress: true
     needs: [build, test]
     steps:
+      - name: sleep
+        run: sleep 30  
       - name: Deploy
         run: echo "Deploying the code"
