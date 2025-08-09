@@ -3,18 +3,18 @@ name: My First Workflow_dispath
 on:
   workflow_dispatch: 
     inputs:
-        loglevel:
-            description: "Log level"
+        logLevel:
+            description: 'Log level'
             required: true
-            default: "warning"
+            default: 'warning'
             type: choice
             options: [info, warning, debug]
         tags:
-            description: "Test Scenario tags"
+            description: 'Test Scenario tags'
             required: false
             type: boolean
         environment:
-            description: "Environment to rn tests"
+            description: 'Environment to run tests'
             required: true
 
 
@@ -25,7 +25,7 @@ jobs:
     steps:
       -  name: Display inputs
          env:
-           LEVEL: ${{ inputs.loglevel }}
+           LEVEL: ${{ inputs.logLevel }}
            TAGS: ${{ inputs.tags }}
            ENVIRONMENT: ${{ inputs.environment }}
          run: |
