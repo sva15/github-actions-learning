@@ -14,5 +14,5 @@ jobs:
     
     -  name: Run ACII Artwork
        run: |
-          chmod +x generate-ascii-srt.sh
+          chmod +x generate-ascii-art.sh
           ./generate-ascii-art.sh
