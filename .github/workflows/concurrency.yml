@@ -20,10 +20,10 @@ jobs:
 
   deploy:
     runs-on: ubuntu-latest
+    concurrency:
+      group: production-deployment
+      cancel-in-progress: true
     needs: [build, test]
     steps:
-      - name: Sleep
-        run: sleep 600
-
       - name: Deploy
         run: echo "Deploying the code"
