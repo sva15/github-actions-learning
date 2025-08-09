@@ -23,7 +23,7 @@ jobs:
            run: sleep 30
     job2:
       runs-on: ubutnu-latest
-
+      needs: job1
       steps:
         -  name: Sleep
            run: sleep 10
@@ -34,7 +34,7 @@ jobs:
     
     job3:
       runs-on: ubuntu-latest
-
+      needs: [job2, job1]
       steps:
         -  name: Display dragon
            run: cat dragon.txt
