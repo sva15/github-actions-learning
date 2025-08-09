@@ -1,0 +1,21 @@
+name: My First ASCII Artwork
+
+on:
+  push:
+    branches: main
+
+jobs:
+  cowsay:
+    runs-on: ubuntu-latest
+
+    steps:
+    -  name: Install Cowsay
+       run: |
+         sudo apt update
+         sudo apt install -y cowsay
+
+    -  name: Generate ASCII Artwork
+       run: cowsay cowsay -f dragon "Run for cover, I am a DRAGON....RAWR" >> dragon.txt
+    
+    -  name: Display file
+       run: cat dragon.txt
