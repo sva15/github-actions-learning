@@ -1,0 +1,174 @@
+name: Detect Directory Changes
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  detect-changes:
+    runs-on: ubuntu-latest
+    outputs:
+      backend-services-changed: ${{ steps.changes.outputs.backend-services }}
+      backend-agents-changed: ${{ steps.changes.outputs.backend-agents }}
+      ui-changed: ${{ steps.changes.outputs.ui }}
+      any-changes: ${{ steps.changes.outputs.any-changes }}
+      changed-dirs: ${{ steps.changes.outputs.changed-dirs }}
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 2  # Fetch current commit and parent
+    
+    - name: Detect changed directories
+      id: changes
+      run: |
+        # For pull requests, compare against the target branch
+        if [ "${{ github.event_name }}" == "pull_request" ]; then
+          BASE_SHA="${{ github.event.pull_request.base.sha }}"
+          HEAD_SHA="${{ github.event.pull_request.head.sha }}"
+          echo "Comparing PR: $BASE_SHA..$HEAD_SHA"
+          CHANGED_FILES=$(git diff --name-only $BASE_SHA..$HEAD_SHA)
+        else
+          # For push events, compare HEAD with HEAD~1
+          echo "Comparing push: HEAD~1..HEAD"
+          CHANGED_FILES=$(git diff --name-only HEAD~1..HEAD)
+        fi
+        
+        echo "Changed files:"
+        echo "$CHANGED_FILES"
+        echo "---"
+        
+        # Initialize flags
+        BACKEND_SERVICES_CHANGED=false
+        BACKEND_AGENTS_CHANGED=false
+        UI_CHANGED=false
+        CHANGED_DIRS=""
+        
+        # Check each changed file against our target directories
+        while IFS= read -r file; do
+          if [[ -n "$file" ]]; then
+            echo "Checking file: $file"
+            
+            # Check backend/services/*/*
+            if [[ "$file" == backend/services/*/* ]]; then
+              echo "  -> Backend services changed"
+              BACKEND_SERVICES_CHANGED=true
+              if [[ "$CHANGED_DIRS" != *"backend/services"* ]]; then
+                CHANGED_DIRS="${CHANGED_DIRS:+$CHANGED_DIRS,}backend/services"
+              fi
+            fi
+            
+            # Check backend/agents/*/*
+            if [[ "$file" == backend/agents/*/* ]]; then
+              echo "  -> Backend agents changed"
+              BACKEND_AGENTS_CHANGED=true
+              if [[ "$CHANGED_DIRS" != *"backend/agents"* ]]; then
+                CHANGED_DIRS="${CHANGED_DIRS:+$CHANGED_DIRS,}backend/agents"
+              fi
+            fi
+            
+            # Check ui/
+            if [[ "$file" == ui/* ]]; then
+              echo "  -> UI changed"
+              UI_CHANGED=true
+              if [[ "$CHANGED_DIRS" != *"ui"* ]]; then
+                CHANGED_DIRS="${CHANGED_DIRS:+$CHANGED_DIRS,}ui"
+              fi
+            fi
+          fi
+        done <<< "$CHANGED_FILES"
+        
+        # Determine if any relevant changes occurred
+        ANY_CHANGES=false
+        if [[ "$BACKEND_SERVICES_CHANGED" == "true" || "$BACKEND_AGENTS_CHANGED" == "true" || "$UI_CHANGED" == "true" ]]; then
+          ANY_CHANGES=true
+        fi
+        
+        # Output results
+        echo "Results:"
+        echo "  Backend Services Changed: $BACKEND_SERVICES_CHANGED"
+        echo "  Backend Agents Changed: $BACKEND_AGENTS_CHANGED"
+        echo "  UI Changed: $UI_CHANGED"
+        echo "  Any Changes: $ANY_CHANGES"
+        echo "  Changed Directories: $CHANGED_DIRS"
+        
+        # Set outputs for other jobs
+        echo "backend-services=$BACKEND_SERVICES_CHANGED" >> $GITHUB_OUTPUT
+        echo "backend-agents=$BACKEND_AGENTS_CHANGED" >> $GITHUB_OUTPUT
+        echo "ui=$UI_CHANGED" >> $GITHUB_OUTPUT
+        echo "any-changes=$ANY_CHANGES" >> $GITHUB_OUTPUT
+        echo "changed-dirs=$CHANGED_DIRS" >> $GITHUB_OUTPUT
+
+  # Example jobs that run conditionally based on detected changes
+  backend-services-job:
+    needs: detect-changes
+    runs-on: ubuntu-latest
+    if: needs.detect-changes.outputs.backend-services-changed == 'true'
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Run backend services tasks
+      run: |
+        echo "Running tasks for backend/services"
+        echo "Changed directories: ${{ needs.detect-changes.outputs.changed-dirs }}"
+        # Add your backend services specific tasks here
+        # e.g., run tests, build, deploy, etc.
+
+  backend-agents-job:
+    needs: detect-changes
+    runs-on: ubuntu-latest
+    if: needs.detect-changes.outputs.backend-agents-changed == 'true'
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Run backend agents tasks
+      run: |
+        echo "Running tasks for backend/agents"
+        echo "Changed directories: ${{ needs.detect-changes.outputs.changed-dirs }}"
+        # Add your backend agents specific tasks here
+
+  ui-job:
+    needs: detect-changes
+    runs-on: ubuntu-latest
+    if: needs.detect-changes.outputs.ui-changed == 'true'
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Run UI tasks
+      run: |
+        echo "Running tasks for UI"
+        echo "Changed directories: ${{ needs.detect-changes.outputs.changed-dirs }}"
+        # Add your UI specific tasks here
+
+  # Job that runs only if any relevant changes are detected
+  deploy-job:
+    needs: [detect-changes, backend-services-job, backend-agents-job, ui-job]
+    runs-on: ubuntu-latest
+    if: always() && needs.detect-changes.outputs.any-changes == 'true'
+    
+    steps:
+    - name: Deploy changes
+      run: |
+        echo "Deploying changes for directories: ${{ needs.detect-changes.outputs.changed-dirs }}"
+        # Add deployment logic here
+
+  # Job that runs when no relevant changes are detected
+  no-changes-job:
+    needs: detect-changes
+    runs-on: ubuntu-latest
+    if: needs.detect-changes.outputs.any-changes == 'false'
+    
+    steps:
+    - name: No relevant changes
+      run: |
+        echo "No changes detected in monitored directories (backend/services, backend/agents, ui)"
+        echo "Skipping pipeline execution"
