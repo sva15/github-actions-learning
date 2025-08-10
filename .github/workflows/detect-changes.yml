@@ -10,11 +10,11 @@ jobs:
   detect-changes:
     runs-on: ubuntu-latest
     outputs:
-      backend-services-changed: ${{ steps.changes.outputs.backend-services }}
-      backend-agents-changed: ${{ steps.changes.outputs.backend-agents }}
       ui-changed: ${{ steps.changes.outputs.ui }}
       any-changes: ${{ steps.changes.outputs.any-changes }}
-      changed-dirs: ${{ steps.changes.outputs.changed-dirs }}
+      changed-subdirs: ${{ steps.changes.outputs.changed-subdirs }}
+      changed-services: ${{ steps.changes.outputs.changed-services }}
+      changed-agents: ${{ steps.changes.outputs.changed-agents }}
     
     steps:
     - name: Checkout code
@@ -41,11 +41,11 @@ jobs:
         echo "$CHANGED_FILES"
         echo "---"
         
-        # Initialize flags
-        BACKEND_SERVICES_CHANGED=false
-        BACKEND_AGENTS_CHANGED=false
+        # Initialize arrays for changed subdirectories
         UI_CHANGED=false
-        CHANGED_DIRS=""
+        CHANGED_SUBDIRS=""
+        CHANGED_SERVICES=""
+        CHANGED_AGENTS=""
         
         # Check each changed file against our target directories
         while IFS= read -r file; do
@@ -54,19 +54,31 @@ jobs:
             
             # Check backend/services/*/*
             if [[ "$file" == backend/services/*/* ]]; then
-              echo "  -> Backend services changed"
-              BACKEND_SERVICES_CHANGED=true
-              if [[ "$CHANGED_DIRS" != *"backend/services"* ]]; then
-                CHANGED_DIRS="${CHANGED_DIRS:+$CHANGED_DIRS,}backend/services"
+              # Extract the specific service directory (second level)
+              SERVICE_DIR=$(echo "$file" | cut -d'/' -f3)
+              FULL_SERVICE_PATH="backend/services/$SERVICE_DIR"
+              echo "  -> Service changed: $FULL_SERVICE_PATH"
+              
+              if [[ "$CHANGED_SUBDIRS" != *"$FULL_SERVICE_PATH"* ]]; then
+                CHANGED_SUBDIRS="${CHANGED_SUBDIRS:+$CHANGED_SUBDIRS,}$FULL_SERVICE_PATH"
+              fi
+              if [[ "$CHANGED_SERVICES" != *"$SERVICE_DIR"* ]]; then
+                CHANGED_SERVICES="${CHANGED_SERVICES:+$CHANGED_SERVICES,}$SERVICE_DIR"
               fi
             fi
             
             # Check backend/agents/*/*
             if [[ "$file" == backend/agents/*/* ]]; then
-              echo "  -> Backend agents changed"
-              BACKEND_AGENTS_CHANGED=true
-              if [[ "$CHANGED_DIRS" != *"backend/agents"* ]]; then
-                CHANGED_DIRS="${CHANGED_DIRS:+$CHANGED_DIRS,}backend/agents"
+              # Extract the specific agent directory (second level)
+              AGENT_DIR=$(echo "$file" | cut -d'/' -f3)
+              FULL_AGENT_PATH="backend/agents/$AGENT_DIR"
+              echo "  -> Agent changed: $FULL_AGENT_PATH"
+              
+              if [[ "$CHANGED_SUBDIRS" != *"$FULL_AGENT_PATH"* ]]; then
+                CHANGED_SUBDIRS="${CHANGED_SUBDIRS:+$CHANGED_SUBDIRS,}$FULL_AGENT_PATH"
+              fi
+              if [[ "$CHANGED_AGENTS" != *"$AGENT_DIR"* ]]; then
+                CHANGED_AGENTS="${CHANGED_AGENTS:+$CHANGED_AGENTS,}$AGENT_DIR"
               fi
             fi
             
@@ -74,8 +86,8 @@ jobs:
             if [[ "$file" == ui/* ]]; then
               echo "  -> UI changed"
               UI_CHANGED=true
-              if [[ "$CHANGED_DIRS" != *"ui"* ]]; then
-                CHANGED_DIRS="${CHANGED_DIRS:+$CHANGED_DIRS,}ui"
+              if [[ "$CHANGED_SUBDIRS" != *"ui"* ]]; then
+                CHANGED_SUBDIRS="${CHANGED_SUBDIRS:+$CHANGED_SUBDIRS,}ui"
               fi
             fi
           fi
@@ -83,30 +95,30 @@ jobs:
         
         # Determine if any relevant changes occurred
         ANY_CHANGES=false
-        if [[ "$BACKEND_SERVICES_CHANGED" == "true" || "$BACKEND_AGENTS_CHANGED" == "true" || "$UI_CHANGED" == "true" ]]; then
+        if [[ -n "$CHANGED_SERVICES" || -n "$CHANGED_AGENTS" || "$UI_CHANGED" == "true" ]]; then
           ANY_CHANGES=true
         fi
         
         # Output results
         echo "Results:"
-        echo "  Backend Services Changed: $BACKEND_SERVICES_CHANGED"
-        echo "  Backend Agents Changed: $BACKEND_AGENTS_CHANGED"
         echo "  UI Changed: $UI_CHANGED"
         echo "  Any Changes: $ANY_CHANGES"
-        echo "  Changed Directories: $CHANGED_DIRS"
+        echo "  Changed Subdirectories: $CHANGED_SUBDIRS"
+        echo "  Changed Services: $CHANGED_SERVICES"
+        echo "  Changed Agents: $CHANGED_AGENTS"
         
         # Set outputs for other jobs
-        echo "backend-services=$BACKEND_SERVICES_CHANGED" >> $GITHUB_OUTPUT
-        echo "backend-agents=$BACKEND_AGENTS_CHANGED" >> $GITHUB_OUTPUT
         echo "ui=$UI_CHANGED" >> $GITHUB_OUTPUT
         echo "any-changes=$ANY_CHANGES" >> $GITHUB_OUTPUT
-        echo "changed-dirs=$CHANGED_DIRS" >> $GITHUB_OUTPUT
+        echo "changed-subdirs=$CHANGED_SUBDIRS" >> $GITHUB_OUTPUT
+        echo "changed-services=$CHANGED_SERVICES" >> $GITHUB_OUTPUT
+        echo "changed-agents=$CHANGED_AGENTS" >> $GITHUB_OUTPUT
 
   # Example jobs that run conditionally based on detected changes
   backend-services-job:
     needs: detect-changes
     runs-on: ubuntu-latest
-    if: needs.detect-changes.outputs.backend-services-changed == 'true'
+    if: needs.detect-changes.outputs.changed-services != ''
     
     steps:
     - name: Checkout code
@@ -114,15 +126,17 @@ jobs:
     
     - name: Run backend services tasks
       run: |
-        echo "Running tasks for backend/services"
-        echo "Changed directories: ${{ needs.detect-changes.outputs.changed-dirs }}"
+        echo "Running tasks for changed services"
+        echo "Changed subdirectories: ${{ needs.detect-changes.outputs.changed-subdirs }}"
+        echo "Specific changed services: ${{ needs.detect-changes.outputs.changed-services }}"
         # Add your backend services specific tasks here
+        # You can now target specific services using the changed-services output
         # e.g., run tests, build, deploy, etc.
 
   backend-agents-job:
     needs: detect-changes
     runs-on: ubuntu-latest
-    if: needs.detect-changes.outputs.backend-agents-changed == 'true'
+    if: needs.detect-changes.outputs.changed-agents != ''
     
     steps:
     - name: Checkout code
@@ -130,9 +144,11 @@ jobs:
     
     - name: Run backend agents tasks
       run: |
-        echo "Running tasks for backend/agents"
-        echo "Changed directories: ${{ needs.detect-changes.outputs.changed-dirs }}"
+        echo "Running tasks for changed agents"
+        echo "Changed subdirectories: ${{ needs.detect-changes.outputs.changed-subdirs }}"
+        echo "Specific changed agents: ${{ needs.detect-changes.outputs.changed-agents }}"
         # Add your backend agents specific tasks here
+        # You can now target specific agents using the changed-agents output
 
   ui-job:
     needs: detect-changes
@@ -158,7 +174,7 @@ jobs:
     steps:
     - name: Deploy changes
       run: |
-        echo "Deploying changes for directories: ${{ needs.detect-changes.outputs.changed-dirs }}"
+        echo "Deploying changes for subdirectories: ${{ needs.detect-changes.outputs.changed-subdirs }}"
         # Add deployment logic here
 
   # Job that runs when no relevant changes are detected
